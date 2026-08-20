@@ -1,0 +1,48 @@
+# ===== Build =====
+target/
+build/
+out/
+*.class
+
+# ===== Maven =====
+.mvn/wrapper/maven-wrapper.jar
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# ===== IDE =====
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.project
+.classpath
+.settings/
+.factorypath
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== Logs =====
+logs/
+*.log
+
+# ===== 密钥 / 本地配置 (CLAUDE.md: 密钥走本地配置文件/环境变量,不提交) =====
+application-local.yml
+application-local.yaml
+application-local.properties
+application-prod.yml
+application-prod.yaml
+*-secret.yml
+*-secret.yaml
+*.pem
+*.key
+*.p12
+.env
+
+# ===== 浏览器自动化快照 (playwright-cli 产物,不入库) =====
+.playwright-cli/

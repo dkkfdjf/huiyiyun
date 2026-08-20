@@ -1,0 +1,34 @@
+# ===== 根级忽略：依赖与构建产物（各子项目另有自己的 .gitignore） =====
+node_modules/
+dist/
+build/
+target/
+out/
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# 日志
+logs/
+*.log
+
+# 环境变量 / 密钥
+.env
+.env.local
+.env.*.local
+
+# 本地配置
+application-local.yml
+application-local.yaml
+application-local.properties
+application-prod.yml
+application-prod.yaml
+*-secret.yml
+*-secret.yaml
+*.pem
+*.key
+*.p12

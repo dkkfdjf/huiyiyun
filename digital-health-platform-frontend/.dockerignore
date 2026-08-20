@@ -1,0 +1,33 @@
+# 依赖 / 构建产物(容器内重新装/重新构建)
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# 机密 / 环境变量(真实高德密钥在 .env.local;构建期经 build args 注入,不靠这些文件)
+.env.local
+.env.*.local
+.env.production
+
+# IDE / OS
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+
+# 日志 / 其他
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.playwright-cli/
+.gitignore
+Dockerfile
+.dockerignore

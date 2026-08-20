@@ -1,0 +1,190 @@
+/* ============================================================
+   慧医云 设计令牌(共享层)
+   :root 放两套预览一致/近似的值作为默认;
+   落地页(.landing)、工作台(.workbench)各自覆盖差异项。
+   令牌逐字取自 preview/v12.html 与 preview/app-dashboard-v6.html。
+   ============================================================ */
+:root {
+  /* 表面 */
+  --surface: #ffffff;
+  --surface-2: #e2e7f1;
+  --surface-3: #dce2ee;
+  --field: #f7f9fc;
+  --bg: #edf1f6; /* 默认=落地页;工作台在 .workbench 覆盖 */
+
+  /* 文字 */
+  --ink: #0c1222;
+  --ink-2: #475063;
+  --ink-3: #8b93a6;
+  --ink-4: #b8becc;
+
+  /* 主色 */
+  --indigo: #4338ca;
+  --indigo-hi: #6366f1;
+  --indigo-soft: #e0e7ff;
+  --indigo-glow: rgba(99, 102, 241, 0.16);
+  --violet: #7c3aed;
+  --amber: #d97706;
+  --amber-soft: rgba(217, 119, 6, 0.12);
+  --red: #dc2a45;
+  --green: #0e9c8f;
+
+  /* 线 */
+  --line: #d6dce6;
+  --line-2: #edf0f7;
+
+  /* 形状 / 阴影 */
+  --rad: 18px;
+  --rad-sm: 12px;
+  --sh: 0 14px 40px -20px rgba(67, 56, 202, 0.2);
+  --sh-sm: 0 6px 18px -10px rgba(67, 56, 202, 0.16);
+  --maxw: 1200px;
+
+  /* 字体 */
+  --font-d: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif;
+  --font-b: 'Noto Sans SC', 'Plus Jakarta Sans', sans-serif;
+  --font-m: 'DM Mono', ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  font-family: var(--font-b);
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+.mono {
+  font-family: var(--font-m);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 共享:列表单元格视觉编码——克制排版优先(留白/字重/灰阶层级),不靠彩色背景块。
+   层次:主标识(加粗主字色) > 数值(等宽略重) > 分类(等宽中灰) > 状态(轻量 el-tag) > 次要文本(浅灰)。
+   cell-pill 已从"彩色药丸"改为纯排版,避免满屏塑料色块。 */
+.cell-primary { font-weight: 600; color: var(--ink); }
+.cell-pill {
+  font-size: 13px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.cell-num {
+  font-family: var(--font-m);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: var(--ink);
+}
+.cell-unit { font-size: 11px; color: var(--ink-3); margin-left: 3px; }
+
+/* 共享:工作台表格——精致商务表方向。
+   去外框(不再像"框")·仅水平细线·表头透明小灰字+加重底线·去斑马纹(靠细线+hover 区分行)·纵向留白。
+   靠 el-table 主题变量 + 高特异性选择器统一覆盖,仅工作台作用域生效。 */
+.workbench .el-table {
+  --el-table-border-color: var(--line-2);
+  --el-table-header-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+  --el-table-row-hover-bg-color: var(--indigo-glow);
+  font-size: 13.5px;
+}
+/* 去外框(box/border-radius/shadow),表格回归"清单"形态 */
+.workbench .el-table,
+.workbench .el-table.tbl { border: none; border-radius: 0; box-shadow: none; }
+/* 表头:透明底 + 小号灰字 + 字间距 + 加重底线 */
+.workbench .el-table th.el-table__cell {
+  color: var(--ink-3);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  background: transparent;
+  border-bottom: 1.5px solid var(--line) !important;
+}
+/* 单元格:纵向留白 + 极淡水平分隔线 */
+.workbench .el-table td.el-table__cell {
+  padding-top: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line-2);
+}
+/* 去斑马纹色块 */
+.workbench .el-table .el-table__row--striped > td.el-table__cell { background: transparent !important; }
+/* 去表格默认底部粗线 + 左 patch */
+.workbench .el-table .el-table__inner-wrapper::before,
+.workbench .el-table .el-table__border-left-patch { display: none; }
+
+/* 共享:工作台筛选栏控件——白底浮起·四周细线·6px 圆角:看得清又有框感,中性白非彩色填充故不突兀。
+   覆盖 el-input__wrapper 与 el-select__wrapper;查询按钮(primary)弱化为靛蓝描边,降低反差;不影响弹窗表单。 */
+.workbench .filters .el-input__wrapper,
+.workbench .filters .el-select__wrapper {
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line) inset;
+  border-radius: 6px;
+  transition: box-shadow 0.18s;
+}
+.workbench .filters .el-input__wrapper:hover,
+.workbench .filters .el-select__wrapper:hover { box-shadow: 0 0 0 1px var(--ink-4) inset; }
+.workbench .filters .el-input__wrapper.is-focus,
+.workbench .filters .el-select__wrapper.is-focused {
+  box-shadow: 0 0 0 1px var(--indigo) inset, 0 0 0 3px var(--indigo-glow);
+}
+.workbench .filters .el-input__inner { height: 34px; line-height: 34px; color: var(--ink); }
+.workbench .filters .el-select__wrapper { min-height: 34px; }
+.workbench .filters .el-input__inner::placeholder { color: var(--ink-3); }
+/* 选中值强制主色(!important 压过 Element 给 is-transparent 类的浅色),看得清选了什么;
+   未选 placeholder 用 Element 默认浅色,与已选天然区分 */
+.workbench .filters .el-select__selected-item { color: var(--ink) !important; -webkit-text-fill-color: var(--ink) !important; }
+/* 查询按钮弱化:实心靛蓝 → 靛蓝描边(透明底+靛蓝线+靛蓝字),与筛选框同语言、不反差;主操作按钮在 .bar 右不受影响 */
+.workbench .filters .el-button--primary {
+  background: transparent !important;
+  border-color: var(--indigo) !important;
+  color: var(--indigo) !important;
+  font-weight: 600;
+}
+.workbench .filters .el-button--primary:hover,
+.workbench .filters .el-button--primary:focus {
+  background: var(--indigo-soft) !important;
+  color: var(--indigo) !important;
+  border-color: var(--indigo) !important;
+}
+:focus-visible {
+  outline: 2px solid var(--indigo-hi);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* 共享:滚入显隐(v-reveal 指令加 .is-revealed)。两套页面行为一致。 */
+.reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  transition:
+    opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.reveal.is-revealed {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

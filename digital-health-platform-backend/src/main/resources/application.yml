@@ -1,0 +1,102 @@
+server:
+  port: 8080
+
+# Actuator 端点暴露:仅 health + prometheus。nginx 只反代 /api/,故 /actuator/* 不对外
+# (仅 compose 内网可达,供 prometheus 抓取,不外泄)。
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  metrics:
+    tags:
+      application: huiyiyun-platform   # 给所有指标打 app 标签,便于 prometheus 按 app 聚合
+
+spring:
+  config:
+    import: "optional:classpath:application-local.yml;optional:file:./application-local.yml"   # 本地机密(MySQL 密码等),已 gitignore。classpath(IDE/打包本机) + file(部署时 jar 同级外部覆盖);不存在则忽略
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:huiyiyun}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false&createDatabaseIfNotExist=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    # @JsonView 激活(游客脱敏 GuestView)时,无 @JsonView 注解的字段必须照常输出——
+    # 否则 LoginVO(登录令牌)等无注解响应会被整体清空,游客"后端登录成功却拿不到 token 进不去";
+    # 且游客浏览数据会只剩 @JsonView(InternalView)被排除后的空壳。显式置 true 锁定 GuestView 的白名单脱敏语义
+    # (只排除 InternalView 敏感字段,不误伤其余字段)。非游客响应无视图激活,不受影响。
+    default-view-inclusion: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true        # 非空库(无 flyway 历史)时打基线,避免直接报错
+    baseline-version: 0              # 关键:基线须在 V1 之前;原值 1 会把 V1 当"已应用"跳过 → 队友非空库建表缺失
+  data:                              # Redis(阶段一缓存层);本机用 Windows 移植版安装包,密码默认空
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DB:0}
+      timeout: 3s
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+          max-wait: 5s
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+huiyi:
+  jwt:
+    secret: ${HUIYI_JWT_SECRET:huiyiyun-dev-secret-please-change-in-production-32+chars}
+    expire-minutes: 720          # 正式账号 Token 有效期 12h(覆盖一个工作日);安全靠即时吊销 + 登录限流兜底
+    guest-expire-minutes: 120    # 游客临时令牌 2h(只读体验,远短于正式 12h,缩泄露窗口);SecurityConfig 注入 JwtUtil
+  captcha:
+    universal-code: 194382   # dev 邮箱/短信验证万能码;prod 由 @Profile("!prod") + 开关禁用
+  cache:
+    prewarm: true            # 启动预热热点缓存(companies:active/materials:page);Redis 未就绪自动跳过,设 false 关闭
+  kb:                                   # 本地知识库 AI 问答(RAG);架构见《本地知识库AI问答-设计.md》
+    enabled: true                       # 总开关(配合 system_config 的 kb.enabled)
+    embedding:
+      impl: hashing                     # 嵌入实现:hashing(默认 stub,词面非语义)/ siliconflow(bge-m3 语义)
+      dimension: 256                    # hashing 维度;siliconflow 用模型自带(1024)
+    chat:
+      impl: templated                   # 作答实现:templated(默认 stub,不调 LLM)/ siliconflow(DeepSeek-V3)
+    siliconflow:                        # 一平台管嵌入+作答(OpenAI 兼容);api-key 放 application-local.yml(gitignore)
+      base-url: https://api.siliconflow.cn
+      embedding:                        # impl=siliconflow 时读取
+        model: BAAI/bge-m3              # bge-m3,1024 维语义向量
+        dimension: 1024
+      chat:                             # impl=siliconflow 时读取
+        model: deepseek-ai/DeepSeek-V3  # SiliconFlow 托管的 DeepSeek
+    vectorstore:
+      impl: mysql                       # 向量库实现:mysql(默认:MySQL存档+内存检索,重启不丢)/ memory(纯内存,测试)
+    chunk:
+      size: 500                         # 每块字符数
+      overlap: 60                       # 相邻块重叠(防边界丢句)
+    retrieval:
+      min-score: 0.40                   # 相关度阈值:余弦得分低于此值视为不相关并丢弃。bge-m3 下 0.30 偏松会致"非0即满topK"(沾边即全过);0.40 起筛掉弱命中、保留真相关。依 KnowledgeService 检索日志的 scores 精调;hashing(stub)下意义弱。
+    # 真实 api-key 放 application-local.yml(gitignore):huiyi.kb.siliconflow.api-key
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+  packages-to-scan: com.huiyi.modules
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+

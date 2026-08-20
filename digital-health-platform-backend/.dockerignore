@@ -1,0 +1,52 @@
+# 构建产物
+target/
+build/
+out/
+*.class
+
+# Maven 临时
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.project
+.classpath
+.settings/
+.factorypath
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 日志
+logs/
+*.log
+
+# ===== 机密 / 本地配置:绝不进镜像 =====
+# application-local.yml 含 MySQL 密码 / SiliconFlow api-key / 阿里云 captcha AK-SK,容器靠环境变量注入
+**/application-local.yml
+**/application-local.yaml
+**/application-local.properties
+**/application-prod.yml
+**/application-prod.yaml
+**/*-secret.yml
+**/*-secret.yaml
+*.pem
+*.key
+*.p12
+.env
+
+# 文档 / 其他
+*.md
+.gitignore
+.playwright-cli/
+Dockerfile
+.dockerignore

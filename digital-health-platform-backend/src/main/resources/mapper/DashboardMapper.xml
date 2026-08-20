@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.huiyi.modules.dashboard.mapper.DashboardMapper">
+
+    <select id="doctorGeo" resultType="com.huiyi.modules.dashboard.vo.DoctorMapPoint">
+        SELECT mi.name         AS name,
+               mi.longitude    AS lng,
+               mi.latitude     AS lat,
+               COUNT(d.id)     AS count
+        FROM doctor d
+        JOIN medical_institution mi ON mi.id = d.institution_id
+        WHERE d.deleted = 0 AND mi.deleted = 0
+        GROUP BY mi.id, mi.name, mi.longitude, mi.latitude
+    </select>
+
+    <select id="titleDistribution" resultType="com.huiyi.modules.dashboard.vo.NameValue">
+        SELECT title AS name, COUNT(*) AS value
+        FROM doctor
+        WHERE deleted = 0 AND title IS NOT NULL AND title &lt;&gt; ''
+        GROUP BY title
+        ORDER BY value DESC
+    </select>
+
+    <select id="deptDistribution" resultType="com.huiyi.modules.dashboard.vo.NameValue">
+        SELECT dt.name AS name, COUNT(d.id) AS value
+        FROM doctor d
+        JOIN department dt ON dt.id = d.department_id
+        WHERE d.deleted = 0 AND dt.deleted = 0
+        GROUP BY dt.name
+        ORDER BY value DESC
+    </select>
+
+    <select id="trend12w" resultType="com.huiyi.modules.dashboard.vo.TrendPoint">
+        SELECT YEARWEEK(sale_time, 1)      AS week,
+               COALESCE(SUM(amount), 0)     AS salesAmount,
+               COALESCE(SUM(qty), 0)        AS outboundQty
+        FROM sales_record
+        WHERE sale_time &gt;= DATE_SUB(CURDATE(), INTERVAL #{weeks} WEEK)
+        GROUP BY YEARWEEK(sale_time, 1)
+        ORDER BY week
+    </select>
+
+    <select id="stockAlerts" resultType="com.huiyi.modules.dashboard.vo.StockAlertVO">
+        SELECT dr.name    AS drugName,
+               dr.specification AS spec,
+               co.name   AS companyName,
+               loc.name  AS locationName,
+               ds.stock_qty AS stockQty,
+               ds.threshold AS threshold
+        FROM drug_stock ds
+        JOIN drug dr ON dr.id = ds.drug_id
+        JOIN sales_location loc ON loc.id = ds.location_id
+        LEFT JOIN pharma_company co ON co.id = ds.company_id
+        WHERE ds.deleted = 0 AND ds.stock_qty &lt;= ds.threshold
+        ORDER BY ds.stock_qty ASC
+        LIMIT 20
+    </select>
+
+    <select id="recentOps" resultType="com.huiyi.modules.dashboard.vo.OpsFeedVO">
+        SELECT t.time, t.event, t.delta, t.type
+        FROM (
+            SELECT s.sale_time AS time,
+                   CONCAT_WS(' · ', co.name, loc.name, CONCAT(dr.name, ' 出库')) AS event,
+                   -s.qty AS delta, 'out' AS type
+            FROM sales_record s
+            JOIN sales_location loc ON loc.id = s.location_id
+            JOIN drug dr ON dr.id = s.drug_id
+            LEFT JOIN pharma_company co ON co.id = s.company_id
+            UNION ALL
+            SELECT r.in_time AS time,
+                   CONCAT_WS(' · ', co.name, loc.name, CONCAT(dr.name, ' 入库')) AS event,
+                   r.qty AS delta, 'in' AS type
+            FROM replenishment_order r
+            JOIN sales_location loc ON loc.id = r.location_id
+            JOIN drug dr ON dr.id = r.drug_id
+            LEFT JOIN pharma_company co ON co.id = r.company_id
+        ) t
+        ORDER BY t.time DESC
+        LIMIT #{n}
+    </select>
+
+    <!-- 最近 N 条操作动态:operation_log 为 append-only 审计日志,无 deleted 列;
+         actor 优先取 user.real_name,缺失(如账号已删)退回 ol.username。 -->
+    <select id="recentActivity" resultType="com.huiyi.modules.dashboard.vo.ActivityVO">
+        SELECT ol.id              AS id,
+               ol.module          AS module,
+               ol.operation       AS operation,
+               COALESCE(u.real_name, ol.username) AS actor,
+               ol.operation_time  AS time
+        FROM operation_log ol
+        LEFT JOIN user u ON u.id = ol.user_id
+        WHERE ol.module &lt;&gt; '认证'
+        ORDER BY ol.operation_time DESC
+        LIMIT #{n}
+    </select>
+
+    <!-- 本周入库/出库件数 + 本周销售额:ISO 周(周一 00:00 起 7 天),与 trend12w 的 YEARWEEK(x,1) 口径一致;
+         append-only 流水表无 deleted 列,不加逻辑删除过滤 -->
+    <select id="weekFlow" resultType="com.huiyi.modules.dashboard.vo.WeekFlowVO">
+        SELECT
+            COALESCE(SUM(CASE WHEN t.type = 'in'  THEN t.qty END), 0) AS inQty,
+            COALESCE(SUM(CASE WHEN t.type = 'out' THEN t.qty END), 0) AS outQty,
+            (SELECT COALESCE(SUM(amount), 0) FROM sales_record
+             WHERE sale_time &gt;= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)
+               AND sale_time &lt;  DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY) + INTERVAL 7 DAY) AS salesAmount
+        FROM (
+            SELECT qty, 'in'  AS type FROM replenishment_order
+            WHERE in_time &gt;= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)
+              AND in_time &lt;  DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY) + INTERVAL 7 DAY
+            UNION ALL
+            SELECT qty, 'out' AS type FROM sales_record
+            WHERE sale_time &gt;= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)
+              AND sale_time &lt;  DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY) + INTERVAL 7 DAY
+        ) t
+    </select>
+
+    <!-- 平台规模计数 -->
+    <select id="scaleStats" resultType="com.huiyi.modules.dashboard.vo.ScaleVO">
+        SELECT
+            (SELECT COUNT(*) FROM drug              WHERE deleted = 0) AS drugCount,
+            (SELECT COUNT(*) FROM sales_location    WHERE deleted = 0) AS locationCount,
+            (SELECT COUNT(*) FROM medical_institution WHERE deleted = 0) AS institutionCount,
+            (SELECT COUNT(*) FROM doctor            WHERE deleted = 0) AS doctorCount
+    </select>
+
+    <!-- 销售网点打点(已录坐标) -->
+    <select id="locationGeo" resultType="com.huiyi.modules.dashboard.vo.DoctorMapPoint">
+        SELECT name, longitude AS lng, latitude AS lat
+        FROM sales_location
+        WHERE deleted = 0 AND longitude IS NOT NULL AND latitude IS NOT NULL
+    </select>
+
+    <!-- 医疗机构打点(LEFT JOIN 保留无医师机构) -->
+    <select id="institutionGeo" resultType="com.huiyi.modules.dashboard.vo.DoctorMapPoint">
+        SELECT mi.name AS name,
+               mi.longitude AS lng,
+               mi.latitude  AS lat,
+               COUNT(d.id)  AS count
+        FROM medical_institution mi
+        LEFT JOIN doctor d ON d.institution_id = mi.id AND d.deleted = 0
+        WHERE mi.deleted = 0 AND mi.longitude IS NOT NULL AND mi.latitude IS NOT NULL
+        GROUP BY mi.id, mi.name, mi.longitude, mi.latitude
+    </select>
+
+</mapper>

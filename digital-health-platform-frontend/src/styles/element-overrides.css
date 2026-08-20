@@ -1,0 +1,32 @@
+/* Element Plus 主题对齐预览(靛蓝主色、圆角、字体) */
+:root {
+  --el-color-primary: #4338ca;
+  --el-color-primary-light-3: #6366f1;
+  --el-color-primary-light-5: #818cf8;
+  --el-color-primary-light-7: #c7d2fe;
+  --el-color-primary-light-8: #e0e7ff;
+  --el-color-primary-light-9: #eef0fe;
+  --el-color-primary-dark-2: #3a2fb0;
+  --el-border-radius-base: 12px;
+  --el-border-radius-small: 8px;
+  --el-font-family: 'Noto Sans SC', 'Plus Jakarta Sans', sans-serif;
+}
+.el-button--primary {
+  background: var(--indigo);
+  border-color: var(--indigo);
+}
+.el-button--primary:hover {
+  background: #3a2fb0;
+  border-color: #3a2fb0;
+}
+.el-input__wrapper.is-focus,
+.el-textarea__inner:focus {
+  box-shadow: 0 0 0 4px var(--indigo-glow) !important;
+}
+
+/* 对话框:窄屏不溢出(max-width 压住内联 px 宽度),超长表单体可滚 */
+.el-dialog { max-width: 92vw; }
+.el-dialog__body { max-height: 68vh; overflow: auto; }
+/* 表格头与圆角对齐 */
+.el-table { border-radius: var(--rad); }
+.el-table th.el-table__cell { background: var(--field); color: var(--ink-2); font-weight: 600; }
