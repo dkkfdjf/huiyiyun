@@ -1,0 +1,6 @@
+# 本地机密配置（已 gitignore，勿提交）。复制为 application-local.yml 并填入真实值
+spring:
+  datasource:
+    password: your_mysql_password
+jwt:
+  secret: your_jwt_secret_at_least_32_characters_long
